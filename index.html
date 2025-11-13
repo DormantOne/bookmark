@@ -12,14 +12,16 @@
     --muted:#9fb0c3;
     --accent:#7dd3fc;
     --accent2:#a78bfa;
-    --gold:#fbbf24
+    --gold:#fbbf24;
   }
+
   html,body{
     height:100%;
     margin:0;
     padding:0;
     overflow:hidden;
   }
+
   body{
     background:
       radial-gradient(90vw 90vh at 110% -20%, #101932 0%, #0b1020 55%),
@@ -28,18 +30,21 @@
     font:14px/1.4 system-ui,-apple-system,sans-serif;
     -webkit-font-smoothing:antialiased;
   }
+
   #app{
     position:fixed;
     inset:0;
     display:flex;
     overflow:hidden;
   }
+
   #scene{
     position:relative;
     flex:1;
     min-width:0;
     overflow:hidden;
   }
+
   #right{
     width:360px;
     flex-shrink:0;
@@ -52,9 +57,11 @@
     transition:transform 0.3s ease-in-out;
     transform:translateX(0);
   }
+
   #right.collapsed{
     transform:translateX(100%);
   }
+
   #togglePanel{
     position:fixed;
     top:16px;
@@ -75,28 +82,34 @@
     transition:all 0.2s;
     box-shadow:0 4px 12px rgba(0,0,0,.3);
   }
+
   #togglePanel:hover{
     background:rgba(20,30,50,.95);
     transform:scale(1.05);
     box-shadow:0 6px 16px rgba(125,211,252,.3);
   }
+
   #togglePanel.active{
     background:linear-gradient(135deg,rgba(125,211,252,.25),rgba(167,139,250,.25));
     border-color:var(--accent);
   }
 
-  /* --- Mobile & small tablet layout --- */
+  /* ---------- Mobile / small tablets ---------- */
   @media (max-width: 768px) {
     html,body{
       overflow:hidden;
     }
+
     #app{
       flex-direction:column;
     }
+
+    /* give the scene some height on phones */
     #scene{
       flex:1;
-      min-height:55vh;
+      min-height:60vh;
     }
+
     #right{
       position:fixed;
       top:0;
@@ -108,17 +121,31 @@
       border-left:1px solid #1f2d4a;
       border-top:none;
       box-shadow:-12px 0 30px rgba(0,0,0,.7);
-      padding:14px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+      padding:calc(18px + env(safe-area-inset-top, 0px)) 14px
+              calc(18px + env(safe-area-inset-bottom, 0px));
       background:linear-gradient(180deg,rgba(14,21,40,.96),rgba(14,21,40,.9));
     }
+
+    /* center the gear at the phone top */
     #togglePanel{
-      right:8px;
-      top:8px;
+      top:calc(8px + env(safe-area-inset-top, 0px));
+      left:50%;
+      right:auto;
+      transform:translateX(-50%);
     }
+
+    /* keep hover scale but preserve centering translation */
+    #togglePanel:hover{
+      background:rgba(20,30,50,.95);
+      transform:translateX(-50%) scale(1.05);
+      box-shadow:0 6px 16px rgba(125,211,252,.3);
+    }
+
     .row{
       flex-direction:column;
       align-items:stretch;
     }
+
     input[type=number]{
       width:100%;
     }
@@ -153,6 +180,7 @@
   .btn.primary:hover:not(:disabled){
     box-shadow:0 4px 16px rgba(125,211,252,.4);
   }
+
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:500}
   input[type=range]{width:100%;cursor:pointer;height:6px}
   input[type=number]{
@@ -164,6 +192,7 @@
     padding:7px;
     font-size:13px;
   }
+
   .pill{
     display:inline-block;
     padding:3px 10px;
@@ -175,10 +204,20 @@
     font-variant-numeric:tabular-nums;
     font-family:ui-monospace,monospace;
   }
-  .legend{display:flex;gap:12px;align-items:center;margin:8px 0;flex-wrap:wrap}
+
+  .legend{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    margin:8px 0;
+    flex-wrap:wrap;
+  }
+
   .dot{width:11px;height:11px;border-radius:999px;display:inline-block;margin-right:5px}
   .a{background:#60a5fa}.b{background:#f472b6}.c{background:#34d399}
+
   h3{font-size:15px;font-weight:700;margin:0 0 10px;color:var(--accent)}
+
   .winner{
     background:linear-gradient(135deg,rgba(251,191,36,.15),rgba(125,211,252,.15));
     border:2px solid var(--gold);
@@ -186,6 +225,7 @@
     border-radius:10px;
     margin:12px 0;
   }
+
   .winner-title{
     color:var(--gold);
     font-size:16px;
@@ -195,6 +235,7 @@
     align-items:center;
     gap:6px;
   }
+
   .param-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -202,14 +243,17 @@
     font-size:12px;
     margin-top:8px;
   }
+
   .param-item{
     background:rgba(11,18,32,.5);
     padding:8px;
     border-radius:6px;
     border:1px solid #1a2642;
   }
+
   .param-label{color:var(--muted);font-size:11px;margin-bottom:3px}
   .param-value{color:var(--ink);font-family:ui-monospace,monospace;font-size:12px;font-weight:600}
+
   .status{
     background:rgba(125,211,252,.1);
     border:1px solid rgba(125,211,252,.3);
@@ -219,9 +263,11 @@
     font-size:13px;
     font-family:ui-monospace,monospace;
   }
+
   .metric{display:inline-block;margin-right:12px;margin-top:4px}
   .metric-label{color:var(--muted);font-size:11px}
   .metric-value{color:var(--accent);font-weight:700;font-size:14px}
+
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
   .searching{animation:pulse 1.2s ease-in-out infinite}
 </style>
@@ -233,7 +279,11 @@
   </div>
   <div id="right">
     <h1>🧬 Three-Body Evolution Lab</h1>
-    <p class="sub">Fast evolutionary search that randomly varies masses, positions, and velocities. Tests how long each configuration stays stable before collision or ejection. Always keeps the best.</p>
+    <p class="sub">
+      Fast evolutionary search that randomly varies masses, positions, and velocities.
+      Tests how long each configuration stays stable before collision or ejection.
+      Always keeps the best.
+    </p>
 
     <div class="card">
       <div class="legend">
@@ -241,10 +291,18 @@
         <span><span class="dot b"></span>Body B</span>
         <span><span class="dot c"></span>Body C</span>
       </div>
-      <button class="btn primary big" id="evolve" style="width:100%;margin-top:8px">🚀 Start Evolution Search</button>
+      <button class="btn primary big" id="evolve" style="width:100%;margin-top:8px">
+        🚀 Start Evolution Search
+      </button>
       <div class="row" id="continueRow" style="display:none;margin-top:8px">
-        <button class="btn big" id="continueEvolve" style="flex:1;background:linear-gradient(135deg,#34d399,#10b981);color:#0a0f1a;border:none;font-weight:700">♾️ Continue Evolution</button>
-        <button class="btn big" id="stopEvolve" style="display:none;background:#dc2626;color:white;border:none;font-weight:700">⏹ Stop</button>
+        <button class="btn big" id="continueEvolve"
+          style="flex:1;background:linear-gradient(135deg,#34d399,#10b981);color:#0a0f1a;border:none;font-weight:700">
+          ♾️ Continue Evolution
+        </button>
+        <button class="btn big" id="stopEvolve"
+          style="display:none;background:#dc2626;color:white;border:none;font-weight:700">
+          ⏹ Stop
+        </button>
       </div>
       <div class="status" id="searchStatus">
         <div class="metric">
@@ -260,7 +318,8 @@
           <div class="metric-value" id="phase">Ready</div>
         </div>
       </div>
-      <div class="status" id="liveStatus" style="display:none;background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.3)">
+      <div class="status" id="liveStatus"
+        style="display:none;background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.3)">
         <div style="margin-bottom:6px;color:#34d399;font-weight:700">🔄 Testing Configuration...</div>
         <div class="metric">
           <div class="metric-label">Current Run</div>
@@ -276,7 +335,10 @@
     <div class="winner" id="winnerCard" style="display:none">
       <div class="winner-title">🏆 Best Configuration Found</div>
       <div style="margin-bottom:10px">
-        <span class="pill" style="background:rgba(251,191,36,.2);border-color:var(--gold);font-weight:700">Survived <span id="winnerSteps">0</span> steps</span>
+        <span class="pill"
+          style="background:rgba(251,191,36,.2);border-color:var(--gold);font-weight:700">
+          Survived <span id="winnerSteps">0</span> steps
+        </span>
       </div>
       
       <div class="param-grid">
@@ -837,7 +899,8 @@ async function continuousEvolution() {
   // Show live status
   document.getElementById('liveStatus').style.display = 'block';
   document.getElementById('phase').textContent = 'Continuous';
-  document.getElementById('targetSteps').textContent = bestScore > 2500 ? `${bestScore + 500}+` : '2500+';
+  document.getElementById('targetSteps').textContent =
+    bestScore > 2500 ? `${bestScore + 500}+` : '2500+';
   
   let tested = parseInt(document.getElementById('tested').textContent) || 0;
   let iteration = 0;
@@ -942,8 +1005,15 @@ function fitCamera() {
   }
   maxR = Math.max(maxR, 2);
 
-  const dist = maxR * 3.2;
-  camera.position.set(dist * 0.7, dist * 0.5, dist * 0.7);
+  // Desktop / tablet distance
+  let dist = maxR * 3.2;
+
+  // Closer on phones so it fills the screen better
+  if (window.innerWidth <= 768) {
+    dist = maxR * 2.3;
+  }
+
+  camera.position.set(dist * 0.7, dist * 0.6, dist * 0.7);
   controls.target.set(0, 0, 0);
   controls.update();
 }
@@ -1146,4 +1216,3 @@ init();
 </script>
 </body>
 </html>
-
