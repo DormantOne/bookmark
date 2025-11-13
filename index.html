@@ -104,7 +104,6 @@
       flex-direction:column;
     }
 
-    /* give the scene some height on phones */
     #scene{
       flex:1;
       min-height:60vh;
@@ -126,7 +125,7 @@
       background:linear-gradient(180deg,rgba(14,21,40,.96),rgba(14,21,40,.9));
     }
 
-    /* center the gear at the phone top */
+    /* center the gear at the top on phones */
     #togglePanel{
       top:calc(8px + env(safe-area-inset-top, 0px));
       left:50%;
@@ -134,7 +133,6 @@
       transform:translateX(-50%);
     }
 
-    /* keep hover scale but preserve centering translation */
     #togglePanel:hover{
       background:rgba(20,30,50,.95);
       transform:translateX(-50%) scale(1.05);
@@ -738,9 +736,7 @@ function scoreConfigLive(config, maxSteps = 4000, updateInterval = 100) {
     }
   }
   
-  // Final update
   document.getElementById('currentSteps').textContent = steps;
-  
   return steps;
 }
 
@@ -778,11 +774,10 @@ async function evolutionarySearch() {
   bestConfig = null;
   topConfigs = [];
   
-  const phase1Count = 150; // Broad exploration
-  const phase2Count = 100; // Refinement
+  const phase1Count = 150;
+  const phase2Count = 100;
   let tested = 0;
   
-  // PHASE 1: Broad random exploration
   updateUI(tested, 'Exploring');
   
   for (let i = 0; i < phase1Count; i++) {
@@ -795,7 +790,6 @@ async function evolutionarySearch() {
       bestConfig = config;
     }
     
-    // Keep top 5
     if (score > 100) {
       topConfigs.push({ config, score });
       topConfigs.sort((a, b) => b.score - a.score);
@@ -809,7 +803,6 @@ async function evolutionarySearch() {
     }
   }
   
-  // PHASE 2: Refine top candidates
   if (topConfigs.length === 0) {
     updateUI(tested, 'Complete');
     displayWinner();
@@ -827,7 +820,6 @@ async function evolutionarySearch() {
     for (let t = 0; t < numToPerturb; t++) {
       const baseConfig = topConfigs[t].config;
       
-      // Create 3 variants
       for (let v = 0; v < 3; v++) {
         const perturbed = perturbConfig(baseConfig, perturbStrength);
         const score = scoreConfig(perturbed, 2500);
@@ -838,7 +830,6 @@ async function evolutionarySearch() {
           bestConfig = perturbed;
         }
         
-        // Update top configs
         if (score > 100) {
           topConfigs.push({ config: perturbed, score });
           topConfigs.sort((a, b) => b.score - a.score);
@@ -847,7 +838,6 @@ async function evolutionarySearch() {
       }
     }
     
-    // Inject fresh random occasionally
     if (iter % 20 === 0) {
       for (let r = 0; r < 5; r++) {
         const fresh = generateRandomConfig();
@@ -861,7 +851,7 @@ async function evolutionarySearch() {
       }
     }
     
-    perturbStrength *= 0.96; // Gradual cooling
+    perturbStrength *= 0.96;
     
     if (iter % 5 === 0) {
       updateUI(tested, 'Refining');
@@ -870,19 +860,16 @@ async function evolutionarySearch() {
     }
   }
   
-  // Done!
   updateUI(tested, 'Complete ✓');
   displayWinner();
   paused = false;
   
-  // Load winner
   if (bestConfig) {
     loadConfig(bestConfig);
     createBodyMeshes();
     fitCamera();
   }
   
-  // Show continue button
   document.getElementById('continueRow').style.display = 'flex';
 }
 
@@ -896,7 +883,6 @@ async function continuousEvolution() {
   paused = true;
   continuousRunning = true;
   
-  // Show live status
   document.getElementById('liveStatus').style.display = 'block';
   document.getElementById('phase').textContent = 'Continuous';
   document.getElementById('targetSteps').textContent =
@@ -908,7 +894,6 @@ async function continuousEvolution() {
   while (continuousRunning) {
     iteration++;
     
-    // Vary perturbation strategy
     let perturbStrength;
     if (iteration % 30 === 0) {
       perturbStrength = 0.25;
@@ -918,50 +903,39 @@ async function continuousEvolution() {
       perturbStrength = 0.08;
     }
     
-    // Work through top 5 seeds
     for (let seedIdx = 0; seedIdx < Math.min(5, topConfigs.length); seedIdx++) {
       if (!continuousRunning) break;
       
       const seedConfig = topConfigs[seedIdx].config;
-      
-      // Create perturbation
       const candidate = perturbConfig(seedConfig, perturbStrength);
       
-      // Test with live updates (higher max steps)
       const maxSteps = Math.max(4000, bestScore + 500);
       document.getElementById('currentSteps').textContent = '0';
       
       const score = scoreConfigLive(candidate, maxSteps, 150);
       tested++;
       
-      // Update if better
       if (score > bestScore) {
         bestScore = score;
         bestConfig = candidate;
         
-        // Update top configs
         topConfigs.push({ config: candidate, score });
         topConfigs.sort((a, b) => b.score - a.score);
         if (topConfigs.length > 5) topConfigs.length = 5;
         
-        // Update displays
         document.getElementById('bestScore').textContent = bestScore;
         document.getElementById('targetSteps').textContent = `${bestScore + 500}+`;
         displayWinner();
         
-        // Flash effect on new record
         const bestScoreEl = document.getElementById('bestScore');
         bestScoreEl.style.color = '#fbbf24';
         setTimeout(() => { bestScoreEl.style.color = '#7dd3fc'; }, 500);
       }
       
       document.getElementById('tested').textContent = tested;
-      
-      // Yield to UI
       await new Promise(r => setTimeout(r, 0));
     }
     
-    // Occasionally inject fresh random to maintain diversity
     if (iteration % 40 === 0) {
       const fresh = generateRandomConfig();
       const score = scoreConfig(fresh, 3000);
@@ -984,12 +958,10 @@ async function continuousEvolution() {
     await new Promise(r => setTimeout(r, 0));
   }
   
-  // Cleanup when stopped
   document.getElementById('liveStatus').style.display = 'none';
   document.getElementById('phase').textContent = 'Stopped';
   paused = false;
   
-  // Load best config
   if (bestConfig) {
     loadConfig(bestConfig);
     createBodyMeshes();
@@ -998,22 +970,34 @@ async function continuousEvolution() {
 }
 
 // ====== Camera ======
-function fitCamera() {
-  let maxR = 0;
+function fitCamera(padding = 1.3) {
+  // Compute a bounding radius around the origin
+  let radius = 0;
   for (let i = 0; i < 3; i++) {
-    maxR = Math.max(maxR, pos[i].length());
+    const rBody = pos[i].length();
+    const rSize = radiusFromMass(bodies[i].m) * 1.2;
+    radius = Math.max(radius, rBody + rSize);
   }
-  maxR = Math.max(maxR, 2);
+  radius = Math.max(radius, 1.5);
 
-  // Desktop / tablet distance
-  let dist = maxR * 3.2;
+  const fov = THREE.MathUtils.degToRad(camera.fov);
+  const w = renderer.domElement.clientWidth || window.innerWidth;
+  const h = renderer.domElement.clientHeight || window.innerHeight;
+  const aspect = w / h;
 
-  // Closer on phones so it fills the screen better
+  // Distances required to fit vertically and horizontally
+  const distV = radius / Math.sin(fov / 2);
+  const horizFov = 2 * Math.atan(Math.tan(fov / 2) * aspect);
+  const distH = radius / Math.sin(horizFov / 2);
+
+  let dist = Math.min(distV, distH) * padding;
+
+  // Slightly closer on phones
   if (window.innerWidth <= 768) {
-    dist = maxR * 2.3;
+    dist *= 0.9;
   }
 
-  camera.position.set(dist * 0.7, dist * 0.6, dist * 0.7);
+  camera.position.set(dist * 0.7, dist * 0.5, dist * 0.7);
   controls.target.set(0, 0, 0);
   controls.update();
 }
@@ -1133,7 +1117,6 @@ document.getElementById('continueEvolve').onclick = async () => {
   
   await continuousEvolution();
   
-  // Reset buttons after stopping
   continueBtn.style.display = 'block';
   stopBtn.style.display = 'none';
 };
@@ -1159,7 +1142,7 @@ document.getElementById('loadWinner').onclick = () => {
 
 document.getElementById('pause').onclick = () => { paused = true; };
 document.getElementById('play').onclick = () => { paused = false; };
-document.getElementById('fit').onclick = fitCamera;
+document.getElementById('fit').onclick = () => fitCamera();
 
 // ====== Toggle panel visibility (desktop vs mobile) ======
 let panelVisible = window.innerWidth > 768;
@@ -1174,6 +1157,12 @@ function applyPanelState() {
     toggleBtn.classList.remove('active');
     toggleBtn.textContent = '☰';
   }
+
+  // After layout settles, resize and refit camera
+  setTimeout(() => {
+    resizeRenderer();
+    fitCamera();
+  }, 0);
 }
 
 toggleBtn.onclick = () => {
@@ -1181,13 +1170,13 @@ toggleBtn.onclick = () => {
   applyPanelState();
 };
 
-// Initialize toggle button state
 applyPanelState();
 
 // ====== Resize handling ======
 function handleResize() {
   resizeRenderer();
-  // If we grow past tablet size, force panel open
+  fitCamera();
+
   if (window.innerWidth > 768 && !panelVisible) {
     panelVisible = true;
     applyPanelState();
@@ -1204,7 +1193,6 @@ function init() {
   fitCamera();
   animate();
   
-  // Auto-start search
   setTimeout(() => {
     if (!searchRunning) {
       document.getElementById('evolve').click();
