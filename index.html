@@ -1,1 +1,1149 @@
-test
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Three-Body Evolution Lab</title>
+<style>
+  :root{
+    --bg:#0b1020;
+    --panel:#0e1528;
+    --ink:#e6edf3;
+    --muted:#9fb0c3;
+    --accent:#7dd3fc;
+    --accent2:#a78bfa;
+    --gold:#fbbf24
+  }
+  html,body{
+    height:100%;
+    margin:0;
+    padding:0;
+    overflow:hidden;
+  }
+  body{
+    background:
+      radial-gradient(90vw 90vh at 110% -20%, #101932 0%, #0b1020 55%),
+      radial-gradient(80vw 80vh at -20% 120%, #0a0f1f 0%, #0b1020 60%);
+    color:var(--ink);
+    font:14px/1.4 system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{
+    position:fixed;
+    inset:0;
+    display:flex;
+    overflow:hidden;
+  }
+  #scene{
+    position:relative;
+    flex:1;
+    min-width:0;
+    overflow:hidden;
+  }
+  #right{
+    width:360px;
+    flex-shrink:0;
+    border-left:1px solid #1f2d4a;
+    background:linear-gradient(180deg,rgba(14,21,40,.9),rgba(14,21,40,.7));
+    backdrop-filter:blur(3px);
+    padding:14px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    transition:transform 0.3s ease-in-out;
+    transform:translateX(0);
+  }
+  #right.collapsed{
+    transform:translateX(100%);
+  }
+  #togglePanel{
+    position:fixed;
+    top:16px;
+    right:16px;
+    z-index:1000;
+    width:44px;
+    height:44px;
+    border-radius:10px;
+    background:rgba(14,21,40,.85);
+    backdrop-filter:blur(8px);
+    border:1px solid #2a4d6a;
+    color:var(--accent);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:20px;
+    transition:all 0.2s;
+    box-shadow:0 4px 12px rgba(0,0,0,.3);
+  }
+  #togglePanel:hover{
+    background:rgba(20,30,50,.95);
+    transform:scale(1.05);
+    box-shadow:0 6px 16px rgba(125,211,252,.3);
+  }
+  #togglePanel.active{
+    background:linear-gradient(135deg,rgba(125,211,252,.25),rgba(167,139,250,.25));
+    border-color:var(--accent);
+  }
+
+  /* --- Mobile & small tablet layout --- */
+  @media (max-width: 768px) {
+    html,body{
+      overflow:hidden;
+    }
+    #app{
+      flex-direction:column;
+    }
+    #scene{
+      flex:1;
+      min-height:55vh;
+    }
+    #right{
+      position:fixed;
+      top:0;
+      right:0;
+      bottom:0;
+      z-index:900;
+      width:100%;
+      max-width:420px;
+      border-left:1px solid #1f2d4a;
+      border-top:none;
+      box-shadow:-12px 0 30px rgba(0,0,0,.7);
+      padding:14px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+      background:linear-gradient(180deg,rgba(14,21,40,.96),rgba(14,21,40,.9));
+    }
+    #togglePanel{
+      right:8px;
+      top:8px;
+    }
+    .row{
+      flex-direction:column;
+      align-items:stretch;
+    }
+    input[type=number]{
+      width:100%;
+    }
+  }
+
+  h1{font-size:19px;margin:0 0 4px;font-weight:700}
+  .sub{color:var(--muted);margin:0 0 12px;font-size:12px;line-height:1.5}
+  .card{background:rgba(15,23,42,.6);border:1px solid #1f2d4a;border-radius:10px;padding:12px;margin:10px 0}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .btn{
+    padding:10px 14px;
+    border-radius:9px;
+    border:1px solid #2a334a;
+    background:#0f172a;
+    color:var(--ink);
+    cursor:pointer;
+    font-size:13px;
+    font-weight:600;
+    transition:all 0.2s;
+  }
+  .btn.big{padding:14px 20px;font-size:15px;font-weight:700}
+  .btn.primary{
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#0a0f1a;
+    border:none;
+  }
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn:hover:not(:disabled){
+    transform:translateY(-1px);
+    box-shadow:0 4px 12px rgba(125,211,252,.2);
+  }
+  .btn.primary:hover:not(:disabled){
+    box-shadow:0 4px 16px rgba(125,211,252,.4);
+  }
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:500}
+  input[type=range]{width:100%;cursor:pointer;height:6px}
+  input[type=number]{
+    width:90px;
+    background:#0b1220;
+    border:1px solid #21304d;
+    color:var(--ink);
+    border-radius:7px;
+    padding:7px;
+    font-size:13px;
+  }
+  .pill{
+    display:inline-block;
+    padding:3px 10px;
+    border-radius:999px;
+    background:#0b1220;
+    border:1px solid #22304d;
+    font-size:12px;
+    margin:2px;
+    font-variant-numeric:tabular-nums;
+    font-family:ui-monospace,monospace;
+  }
+  .legend{display:flex;gap:12px;align-items:center;margin:8px 0;flex-wrap:wrap}
+  .dot{width:11px;height:11px;border-radius:999px;display:inline-block;margin-right:5px}
+  .a{background:#60a5fa}.b{background:#f472b6}.c{background:#34d399}
+  h3{font-size:15px;font-weight:700;margin:0 0 10px;color:var(--accent)}
+  .winner{
+    background:linear-gradient(135deg,rgba(251,191,36,.15),rgba(125,211,252,.15));
+    border:2px solid var(--gold);
+    padding:14px;
+    border-radius:10px;
+    margin:12px 0;
+  }
+  .winner-title{
+    color:var(--gold);
+    font-size:16px;
+    font-weight:700;
+    margin:0 0 10px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .param-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    font-size:12px;
+    margin-top:8px;
+  }
+  .param-item{
+    background:rgba(11,18,32,.5);
+    padding:8px;
+    border-radius:6px;
+    border:1px solid #1a2642;
+  }
+  .param-label{color:var(--muted);font-size:11px;margin-bottom:3px}
+  .param-value{color:var(--ink);font-family:ui-monospace,monospace;font-size:12px;font-weight:600}
+  .status{
+    background:rgba(125,211,252,.1);
+    border:1px solid rgba(125,211,252,.3);
+    padding:10px;
+    border-radius:8px;
+    margin:10px 0;
+    font-size:13px;
+    font-family:ui-monospace,monospace;
+  }
+  .metric{display:inline-block;margin-right:12px;margin-top:4px}
+  .metric-label{color:var(--muted);font-size:11px}
+  .metric-value{color:var(--accent);font-weight:700;font-size:14px}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+  .searching{animation:pulse 1.2s ease-in-out infinite}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="scene">
+    <button id="togglePanel" title="Toggle Control Panel">⚙️</button>
+  </div>
+  <div id="right">
+    <h1>🧬 Three-Body Evolution Lab</h1>
+    <p class="sub">Fast evolutionary search that randomly varies masses, positions, and velocities. Tests how long each configuration stays stable before collision or ejection. Always keeps the best.</p>
+
+    <div class="card">
+      <div class="legend">
+        <span><span class="dot a"></span>Body A</span>
+        <span><span class="dot b"></span>Body B</span>
+        <span><span class="dot c"></span>Body C</span>
+      </div>
+      <button class="btn primary big" id="evolve" style="width:100%;margin-top:8px">🚀 Start Evolution Search</button>
+      <div class="row" id="continueRow" style="display:none;margin-top:8px">
+        <button class="btn big" id="continueEvolve" style="flex:1;background:linear-gradient(135deg,#34d399,#10b981);color:#0a0f1a;border:none;font-weight:700">♾️ Continue Evolution</button>
+        <button class="btn big" id="stopEvolve" style="display:none;background:#dc2626;color:white;border:none;font-weight:700">⏹ Stop</button>
+      </div>
+      <div class="status" id="searchStatus">
+        <div class="metric">
+          <div class="metric-label">Tested</div>
+          <div class="metric-value" id="tested">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Current Best</div>
+          <div class="metric-value" id="bestScore">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Phase</div>
+          <div class="metric-value" id="phase">Ready</div>
+        </div>
+      </div>
+      <div class="status" id="liveStatus" style="display:none;background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.3)">
+        <div style="margin-bottom:6px;color:#34d399;font-weight:700">🔄 Testing Configuration...</div>
+        <div class="metric">
+          <div class="metric-label">Current Run</div>
+          <div class="metric-value" id="currentSteps" style="color:#34d399">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Target</div>
+          <div class="metric-value" id="targetSteps" style="color:#34d399">2500+</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="winner" id="winnerCard" style="display:none">
+      <div class="winner-title">🏆 Best Configuration Found</div>
+      <div style="margin-bottom:10px">
+        <span class="pill" style="background:rgba(251,191,36,.2);border-color:var(--gold);font-weight:700">Survived <span id="winnerSteps">0</span> steps</span>
+      </div>
+      
+      <div class="param-grid">
+        <div class="param-item">
+          <div class="param-label">Body A Mass</div>
+          <div class="param-value" id="winnerMA">—</div>
+        </div>
+        <div class="param-item">
+          <div class="param-label">Body B Mass</div>
+          <div class="param-value" id="winnerMB">—</div>
+        </div>
+        <div class="param-item">
+          <div class="param-label">Body C Mass</div>
+          <div class="param-value" id="winnerMC">—</div>
+        </div>
+        <div class="param-item" style="grid-column:1/-1">
+          <div class="param-label">Body A Initial Velocity</div>
+          <div class="param-value" id="winnerVA">—</div>
+        </div>
+        <div class="param-item" style="grid-column:1/-1">
+          <div class="param-label">Body B Initial Velocity</div>
+          <div class="param-value" id="winnerVB">—</div>
+        </div>
+        <div class="param-item" style="grid-column:1/-1">
+          <div class="param-label">Body C Initial Velocity</div>
+          <div class="param-value" id="winnerVC">—</div>
+        </div>
+      </div>
+      
+      <button class="btn" id="loadWinner" style="width:100%;margin-top:10px">▶ Load & Watch</button>
+    </div>
+
+    <div class="card">
+      <h3>Simulation Speed</h3>
+      <div>
+        <label>Time Step dt = <span id="dtVal" class="pill">0.005</span></label>
+        <input type="range" id="dt" min="0.001" max="0.015" step="0.001" value="0.005"/>
+      </div>
+      <div style="margin-top:10px">
+        <label>Gravity G = <span id="gVal" class="pill">1.0</span></label>
+        <input type="range" id="gconst" min="0.5" max="2.0" step="0.1" value="1.0"/>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Controls</h3>
+      <div class="row">
+        <button class="btn" id="randomize">Random Config</button>
+        <button class="btn" id="pause">Pause</button>
+        <button class="btn" id="play">Play</button>
+        <button class="btn" id="fit">Fit Camera</button>
+      </div>
+      <div style="margin-top:10px">
+        <label style="display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="showTrails" checked/> Show Trails
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Current Simulation</h3>
+      <div style="font-size:12px;font-family:ui-monospace,monospace">
+        <div>Steps: <span class="pill" id="simSteps">0</span></div>
+        <div style="margin-top:4px">Max distance: <span class="pill" id="maxDist">—</span></div>
+        <div style="margin-top:4px">Min distance: <span class="pill" id="minDist">—</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ====== Utility ======
+const v3 = (x=0, y=0, z=0) => new THREE.Vector3(x, y, z);
+const rand = (min=0, max=1) => min + Math.random() * (max - min);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+// ====== State ======
+const bodies = [
+  { name: 'A', color: 0x60a5fa, m: 1.5 },
+  { name: 'B', color: 0xf472b6, m: 1.0 },
+  { name: 'C', color: 0x34d399, m: 0.5 },
+];
+
+let pos = [v3(), v3(), v3()];
+let vel = [v3(), v3(), v3()];
+let acc = [v3(), v3(), v3()];
+
+let G = 1.0;
+let dt = 0.005; // Fast baseline
+let paused = false;
+let showTrails = true;
+let stepCount = 0;
+
+// ====== DOM Refs ======
+const sceneEl = document.getElementById('scene');
+const rightPanel = document.getElementById('right');
+const toggleBtn = document.getElementById('togglePanel');
+
+// ====== Scene Setup ======
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+function resizeRenderer() {
+  const w = sceneEl.clientWidth;
+  const h = sceneEl.clientHeight;
+  if (w > 0 && h > 0) {
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+}
+
+sceneEl.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x050a16);
+
+const camera = new THREE.PerspectiveCamera(50, 1, 0.01, 1000);
+camera.position.set(6, 5, 6);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.minDistance = 0.5;
+controls.maxDistance = 100;
+
+const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambient);
+
+const dir1 = new THREE.DirectionalLight(0xffffff, 0.9);
+dir1.position.set(5, 10, 5);
+scene.add(dir1);
+
+const dir2 = new THREE.DirectionalLight(0x88ccff, 0.4);
+dir2.position.set(-5, 5, -5);
+scene.add(dir2);
+
+const grid = new THREE.GridHelper(20, 20, 0x223355, 0x132340);
+grid.material.opacity = 0.12;
+grid.material.transparent = true;
+scene.add(grid);
+
+// ====== Bodies & Trails ======
+const meshes = [];
+const trails = [];
+const trailLength = 500;
+
+function radiusFromMass(m) {
+  return Math.pow(m, 1/3) * 0.16;
+}
+
+function createBodyMeshes() {
+  meshes.forEach(m => scene.remove(m));
+  trails.forEach(t => scene.remove(t.line));
+  meshes.length = 0;
+  trails.length = 0;
+
+  for (let i = 0; i < 3; i++) {
+    const r = radiusFromMass(bodies[i].m);
+    const geo = new THREE.SphereGeometry(r, 28, 20);
+    const mat = new THREE.MeshStandardMaterial({
+      color: bodies[i].color,
+      roughness: 0.4,
+      metalness: 0.4,
+      emissive: bodies[i].color,
+      emissiveIntensity: 0.25
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    scene.add(mesh);
+    meshes.push(mesh);
+
+    const positions = new Float32Array(trailLength * 3);
+    const trailGeo = new THREE.BufferGeometry();
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const trailMat = new THREE.LineBasicMaterial({
+      color: bodies[i].color,
+      transparent: true,
+      opacity: 0.5
+    });
+    const line = new THREE.Line(trailGeo, trailMat);
+    scene.add(line);
+    trails.push({ geo: trailGeo, positions, head: 0, line });
+  }
+}
+
+// ====== Physics ======
+function computeAccelerations() {
+  for (let i = 0; i < 3; i++) {
+    acc[i].set(0, 0, 0);
+  }
+
+  for (let i = 0; i < 3; i++) {
+    for (let j = i + 1; j < 3; j++) {
+      const rVec = pos[j].clone().sub(pos[i]);
+      const r2 = rVec.lengthSq();
+      const r = Math.sqrt(r2);
+      
+      if (r < 0.001) continue;
+      
+      const invR3 = 1 / (r * r * r);
+      const force = rVec.multiplyScalar(G * invR3);
+      
+      acc[i].add(force.clone().multiplyScalar(bodies[j].m));
+      acc[j].sub(force.clone().multiplyScalar(bodies[i].m));
+    }
+  }
+}
+
+function stepLeapfrog(h) {
+  // Kick
+  for (let i = 0; i < 3; i++) {
+    vel[i].addScaledVector(acc[i], 0.5 * h);
+  }
+
+  // Drift
+  for (let i = 0; i < 3; i++) {
+    pos[i].addScaledVector(vel[i], h);
+  }
+
+  computeAccelerations();
+
+  // Kick
+  for (let i = 0; i < 3; i++) {
+    vel[i].addScaledVector(acc[i], 0.5 * h);
+  }
+  
+  stepCount++;
+}
+
+function checkBounds() {
+  const minAllowed = 0.1; // Too close = collision
+  const maxAllowed = 12;  // Too far = ejection
+
+  for (let i = 0; i < 3; i++) {
+    for (let j = i + 1; j < 3; j++) {
+      const dist = pos[i].distanceTo(pos[j]);
+      if (dist < minAllowed || dist > maxAllowed) {
+        return false; // Out of bounds
+      }
+    }
+  }
+  return true; // Still valid
+}
+
+function getDistanceStats() {
+  let minDist = Infinity;
+  let maxDist = 0;
+  
+  for (let i = 0; i < 3; i++) {
+    for (let j = i + 1; j < 3; j++) {
+      const dist = pos[i].distanceTo(pos[j]);
+      minDist = Math.min(minDist, dist);
+      maxDist = Math.max(maxDist, dist);
+    }
+  }
+  
+  return { minDist, maxDist };
+}
+
+function zeroCOM() {
+  let M = 0;
+  const com = v3();
+  const comVel = v3();
+
+  for (let i = 0; i < 3; i++) {
+    const m = bodies[i].m;
+    M += m;
+    com.addScaledVector(pos[i], m);
+    comVel.addScaledVector(vel[i], m);
+  }
+
+  com.multiplyScalar(1 / M);
+  comVel.multiplyScalar(1 / M);
+
+  for (let i = 0; i < 3; i++) {
+    pos[i].sub(com);
+    vel[i].sub(comVel);
+  }
+}
+
+// ====== Configuration Management ======
+function randomVec(scale = 1) {
+  return v3(
+    rand(-scale, scale),
+    rand(-scale, scale),
+    rand(-scale, scale)
+  );
+}
+
+function generateRandomConfig() {
+  return {
+    masses: [
+      rand(0.3, 3.5),
+      rand(0.3, 3.5),
+      rand(0.3, 3.5)
+    ],
+    positions: [
+      randomVec(rand(0.6, 2.2)),
+      randomVec(rand(0.6, 2.2)),
+      randomVec(rand(0.6, 2.2))
+    ],
+    velocities: [
+      randomVec(rand(0.3, 1.5)),
+      randomVec(rand(0.3, 1.5)),
+      randomVec(rand(0.3, 1.5))
+    ]
+  };
+}
+
+function loadConfig(config) {
+  for (let i = 0; i < 3; i++) {
+    bodies[i].m = config.masses[i];
+    pos[i].copy(config.positions[i]);
+    vel[i].copy(config.velocities[i]);
+  }
+  
+  // Add some rotation for orbital motion
+  const axis = randomVec(1).normalize();
+  const angle = rand(0.4, 1.0);
+  const rot = new THREE.Matrix4().makeRotationAxis(axis, angle);
+  for (let i = 0; i < 3; i++) {
+    vel[i].applyMatrix4(rot);
+  }
+  
+  zeroCOM();
+  computeAccelerations();
+  stepCount = 0;
+}
+
+function cloneConfig() {
+  return {
+    masses: bodies.map(b => b.m),
+    positions: pos.map(v => v.clone()),
+    velocities: vel.map(v => v.clone())
+  };
+}
+
+function perturbConfig(config, strength = 0.12) {
+  return {
+    masses: config.masses.map(m => clamp(m * (1 + rand(-strength, strength)), 0.2, 5.0)),
+    positions: config.positions.map(p => p.clone().add(randomVec(strength * 0.6))),
+    velocities: config.velocities.map(v => v.clone().add(randomVec(strength * 0.4)))
+  };
+}
+
+// ====== Scoring (simple: count steps until out of bounds) ======
+function scoreConfig(config, maxSteps = 2000) {
+  loadConfig(config);
+  
+  let steps = 0;
+  const h = 0.004; // Fast fixed timestep for evaluation
+  
+  for (let i = 0; i < maxSteps; i++) {
+    stepLeapfrog(h);
+    
+    if (!checkBounds()) {
+      break; // Out of bounds = score is step count
+    }
+    
+    steps++;
+  }
+  
+  return steps;
+}
+
+// Live scoring with UI updates (for continuous evolution)
+function scoreConfigLive(config, maxSteps = 4000, updateInterval = 100) {
+  loadConfig(config);
+  
+  let steps = 0;
+  const h = 0.004;
+  
+  for (let i = 0; i < maxSteps; i++) {
+    stepLeapfrog(h);
+    
+    if (!checkBounds()) {
+      break;
+    }
+    
+    steps++;
+    
+    // Update UI periodically
+    if (steps % updateInterval === 0) {
+      document.getElementById('currentSteps').textContent = steps;
+    }
+  }
+  
+  // Final update
+  document.getElementById('currentSteps').textContent = steps;
+  
+  return steps;
+}
+
+// ====== Evolutionary Search ======
+let bestConfig = null;
+let bestScore = 0;
+let topConfigs = [];
+let continuousRunning = false;
+
+function updateUI(tested, phase) {
+  document.getElementById('tested').textContent = tested;
+  document.getElementById('bestScore').textContent = bestScore;
+  document.getElementById('phase').textContent = phase;
+}
+
+function displayWinner() {
+  if (!bestConfig) return;
+  
+  document.getElementById('winnerCard').style.display = 'block';
+  document.getElementById('winnerSteps').textContent = bestScore;
+  
+  document.getElementById('winnerMA').textContent = bestConfig.masses[0].toFixed(3);
+  document.getElementById('winnerMB').textContent = bestConfig.masses[1].toFixed(3);
+  document.getElementById('winnerMC').textContent = bestConfig.masses[2].toFixed(3);
+  
+  const fmtVec = (v) => `(${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)})`;
+  document.getElementById('winnerVA').textContent = fmtVec(bestConfig.velocities[0]);
+  document.getElementById('winnerVB').textContent = fmtVec(bestConfig.velocities[1]);
+  document.getElementById('winnerVC').textContent = fmtVec(bestConfig.velocities[2]);
+}
+
+async function evolutionarySearch() {
+  paused = true;
+  bestScore = 0;
+  bestConfig = null;
+  topConfigs = [];
+  
+  const phase1Count = 150; // Broad exploration
+  const phase2Count = 100; // Refinement
+  let tested = 0;
+  
+  // PHASE 1: Broad random exploration
+  updateUI(tested, 'Exploring');
+  
+  for (let i = 0; i < phase1Count; i++) {
+    const config = generateRandomConfig();
+    const score = scoreConfig(config, 2000);
+    tested++;
+    
+    if (score > bestScore) {
+      bestScore = score;
+      bestConfig = config;
+    }
+    
+    // Keep top 5
+    if (score > 100) {
+      topConfigs.push({ config, score });
+      topConfigs.sort((a, b) => b.score - a.score);
+      if (topConfigs.length > 5) topConfigs.length = 5;
+    }
+    
+    if (i % 10 === 0) {
+      updateUI(tested, 'Exploring');
+      displayWinner();
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+  
+  // PHASE 2: Refine top candidates
+  if (topConfigs.length === 0) {
+    updateUI(tested, 'Complete');
+    displayWinner();
+    paused = false;
+    if (bestConfig) loadConfig(bestConfig);
+    return;
+  }
+  
+  updateUI(tested, 'Refining');
+  let perturbStrength = 0.15;
+  
+  for (let iter = 0; iter < phase2Count; iter++) {
+    const numToPerturb = Math.min(3, topConfigs.length);
+    
+    for (let t = 0; t < numToPerturb; t++) {
+      const baseConfig = topConfigs[t].config;
+      
+      // Create 3 variants
+      for (let v = 0; v < 3; v++) {
+        const perturbed = perturbConfig(baseConfig, perturbStrength);
+        const score = scoreConfig(perturbed, 2500);
+        tested++;
+        
+        if (score > bestScore) {
+          bestScore = score;
+          bestConfig = perturbed;
+        }
+        
+        // Update top configs
+        if (score > 100) {
+          topConfigs.push({ config: perturbed, score });
+          topConfigs.sort((a, b) => b.score - a.score);
+          if (topConfigs.length > 5) topConfigs.length = 5;
+        }
+      }
+    }
+    
+    // Inject fresh random occasionally
+    if (iter % 20 === 0) {
+      for (let r = 0; r < 5; r++) {
+        const fresh = generateRandomConfig();
+        const score = scoreConfig(fresh, 2000);
+        tested++;
+        
+        if (score > bestScore) {
+          bestScore = score;
+          bestConfig = fresh;
+        }
+      }
+    }
+    
+    perturbStrength *= 0.96; // Gradual cooling
+    
+    if (iter % 5 === 0) {
+      updateUI(tested, 'Refining');
+      displayWinner();
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+  
+  // Done!
+  updateUI(tested, 'Complete ✓');
+  displayWinner();
+  paused = false;
+  
+  // Load winner
+  if (bestConfig) {
+    loadConfig(bestConfig);
+    createBodyMeshes();
+    fitCamera();
+  }
+  
+  // Show continue button
+  document.getElementById('continueRow').style.display = 'flex';
+}
+
+// ====== Continuous Evolution Mode ======
+async function continuousEvolution() {
+  if (topConfigs.length === 0) {
+    alert('Run initial evolution first to get seed configurations!');
+    return;
+  }
+  
+  paused = true;
+  continuousRunning = true;
+  
+  // Show live status
+  document.getElementById('liveStatus').style.display = 'block';
+  document.getElementById('phase').textContent = 'Continuous';
+  document.getElementById('targetSteps').textContent = bestScore > 2500 ? `${bestScore + 500}+` : '2500+';
+  
+  let tested = parseInt(document.getElementById('tested').textContent) || 0;
+  let iteration = 0;
+  
+  while (continuousRunning) {
+    iteration++;
+    
+    // Vary perturbation strategy
+    let perturbStrength;
+    if (iteration % 30 === 0) {
+      perturbStrength = 0.25;
+    } else if (iteration % 10 === 0) {
+      perturbStrength = 0.15;
+    } else {
+      perturbStrength = 0.08;
+    }
+    
+    // Work through top 5 seeds
+    for (let seedIdx = 0; seedIdx < Math.min(5, topConfigs.length); seedIdx++) {
+      if (!continuousRunning) break;
+      
+      const seedConfig = topConfigs[seedIdx].config;
+      
+      // Create perturbation
+      const candidate = perturbConfig(seedConfig, perturbStrength);
+      
+      // Test with live updates (higher max steps)
+      const maxSteps = Math.max(4000, bestScore + 500);
+      document.getElementById('currentSteps').textContent = '0';
+      
+      const score = scoreConfigLive(candidate, maxSteps, 150);
+      tested++;
+      
+      // Update if better
+      if (score > bestScore) {
+        bestScore = score;
+        bestConfig = candidate;
+        
+        // Update top configs
+        topConfigs.push({ config: candidate, score });
+        topConfigs.sort((a, b) => b.score - a.score);
+        if (topConfigs.length > 5) topConfigs.length = 5;
+        
+        // Update displays
+        document.getElementById('bestScore').textContent = bestScore;
+        document.getElementById('targetSteps').textContent = `${bestScore + 500}+`;
+        displayWinner();
+        
+        // Flash effect on new record
+        const bestScoreEl = document.getElementById('bestScore');
+        bestScoreEl.style.color = '#fbbf24';
+        setTimeout(() => { bestScoreEl.style.color = '#7dd3fc'; }, 500);
+      }
+      
+      document.getElementById('tested').textContent = tested;
+      
+      // Yield to UI
+      await new Promise(r => setTimeout(r, 0));
+    }
+    
+    // Occasionally inject fresh random to maintain diversity
+    if (iteration % 40 === 0) {
+      const fresh = generateRandomConfig();
+      const score = scoreConfig(fresh, 3000);
+      tested++;
+      
+      if (score > bestScore) {
+        bestScore = score;
+        bestConfig = fresh;
+        document.getElementById('bestScore').textContent = bestScore;
+        displayWinner();
+      }
+      
+      if (score > 100) {
+        topConfigs.push({ config: fresh, score });
+        topConfigs.sort((a, b) => b.score - a.score);
+        if (topConfigs.length > 5) topConfigs.length = 5;
+      }
+    }
+    
+    await new Promise(r => setTimeout(r, 0));
+  }
+  
+  // Cleanup when stopped
+  document.getElementById('liveStatus').style.display = 'none';
+  document.getElementById('phase').textContent = 'Stopped';
+  paused = false;
+  
+  // Load best config
+  if (bestConfig) {
+    loadConfig(bestConfig);
+    createBodyMeshes();
+    fitCamera();
+  }
+}
+
+// ====== Camera ======
+function fitCamera() {
+  let maxR = 0;
+  for (let i = 0; i < 3; i++) {
+    maxR = Math.max(maxR, pos[i].length());
+  }
+  maxR = Math.max(maxR, 2);
+
+  const dist = maxR * 3.2;
+  camera.position.set(dist * 0.7, dist * 0.5, dist * 0.7);
+  controls.target.set(0, 0, 0);
+  controls.update();
+}
+
+// ====== Trails ======
+function pushTrail(i, p) {
+  const trail = trails[i];
+  if (!trail) return;
+
+  const idx = (trail.head % trailLength) * 3;
+  trail.positions[idx] = p.x;
+  trail.positions[idx + 1] = p.y;
+  trail.positions[idx + 2] = p.z;
+  trail.head++;
+
+  trail.geo.attributes.position.needsUpdate = true;
+}
+
+function updateTrails() {
+  for (let i = 0; i < 3; i++) {
+    if (trails[i]) {
+      trails[i].line.visible = showTrails;
+    }
+  }
+}
+
+// ====== Rendering ======
+function updateMeshes() {
+  for (let i = 0; i < 3; i++) {
+    if (!meshes[i]) continue;
+    meshes[i].position.copy(pos[i]);
+    
+    const r = radiusFromMass(bodies[i].m);
+    const scale = r / radiusFromMass(1);
+    meshes[i].scale.setScalar(scale);
+  }
+}
+
+function updateDiagnostics() {
+  document.getElementById('simSteps').textContent = stepCount;
+  
+  const { minDist, maxDist } = getDistanceStats();
+  document.getElementById('minDist').textContent = minDist.toFixed(3);
+  document.getElementById('maxDist').textContent = maxDist.toFixed(3);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  if (!paused) {
+    const substeps = 2;
+    const h = dt / substeps;
+
+    for (let s = 0; s < substeps; s++) {
+      stepLeapfrog(h);
+      
+      if (s === 0) {
+        for (let i = 0; i < 3; i++) {
+          pushTrail(i, pos[i]);
+        }
+      }
+    }
+  }
+
+  updateMeshes();
+  updateTrails();
+  updateDiagnostics();
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+// ====== UI Bindings ======
+const dtEl = document.getElementById('dt');
+const gEl = document.getElementById('gconst');
+
+dtEl.oninput = () => {
+  dt = parseFloat(dtEl.value);
+  document.getElementById('dtVal').textContent = dt.toFixed(3);
+};
+
+gEl.oninput = () => {
+  G = parseFloat(gEl.value);
+  document.getElementById('gVal').textContent = G.toFixed(2);
+};
+
+document.getElementById('showTrails').onchange = (e) => {
+  showTrails = e.target.checked;
+};
+
+let searchRunning = false;
+
+document.getElementById('evolve').onclick = async () => {
+  if (searchRunning) return;
+  
+  searchRunning = true;
+  const btn = document.getElementById('evolve');
+  btn.disabled = true;
+  btn.classList.add('searching');
+  btn.textContent = '⚡ Searching...';
+  
+  await evolutionarySearch();
+  
+  btn.disabled = false;
+  btn.classList.remove('searching');
+  btn.textContent = '🚀 Start Evolution Search';
+  searchRunning = false;
+};
+
+document.getElementById('continueEvolve').onclick = async () => {
+  if (continuousRunning) return;
+  
+  const continueBtn = document.getElementById('continueEvolve');
+  const stopBtn = document.getElementById('stopEvolve');
+  
+  continueBtn.style.display = 'none';
+  stopBtn.style.display = 'block';
+  
+  await continuousEvolution();
+  
+  // Reset buttons after stopping
+  continueBtn.style.display = 'block';
+  stopBtn.style.display = 'none';
+};
+
+document.getElementById('stopEvolve').onclick = () => {
+  continuousRunning = false;
+};
+
+document.getElementById('randomize').onclick = () => {
+  const config = generateRandomConfig();
+  loadConfig(config);
+  createBodyMeshes();
+  fitCamera();
+};
+
+document.getElementById('loadWinner').onclick = () => {
+  if (bestConfig) {
+    loadConfig(bestConfig);
+    createBodyMeshes();
+    fitCamera();
+  }
+};
+
+document.getElementById('pause').onclick = () => { paused = true; };
+document.getElementById('play').onclick = () => { paused = false; };
+document.getElementById('fit').onclick = fitCamera;
+
+// ====== Toggle panel visibility (desktop vs mobile) ======
+let panelVisible = window.innerWidth > 768;
+
+function applyPanelState() {
+  if (panelVisible) {
+    rightPanel.classList.remove('collapsed');
+    toggleBtn.classList.add('active');
+    toggleBtn.textContent = '⚙️';
+  } else {
+    rightPanel.classList.add('collapsed');
+    toggleBtn.classList.remove('active');
+    toggleBtn.textContent = '☰';
+  }
+}
+
+toggleBtn.onclick = () => {
+  panelVisible = !panelVisible;
+  applyPanelState();
+};
+
+// Initialize toggle button state
+applyPanelState();
+
+// ====== Resize handling ======
+function handleResize() {
+  resizeRenderer();
+  // If we grow past tablet size, force panel open
+  if (window.innerWidth > 768 && !panelVisible) {
+    panelVisible = true;
+    applyPanelState();
+  }
+}
+window.addEventListener('resize', handleResize);
+
+// ====== Initialize ======
+function init() {
+  resizeRenderer();
+  createBodyMeshes();
+  const initialConfig = generateRandomConfig();
+  loadConfig(initialConfig);
+  fitCamera();
+  animate();
+  
+  // Auto-start search
+  setTimeout(() => {
+    if (!searchRunning) {
+      document.getElementById('evolve').click();
+    }
+  }, 800);
+}
+
+init();
+</script>
+</body>
+</html>
+
