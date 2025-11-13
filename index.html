@@ -45,6 +45,13 @@
     overflow:hidden;
   }
 
+  /* Make the canvas actually fill its container */
+  #scene canvas{
+    display:block;
+    width:100%;
+    height:100%;
+  }
+
   #right{
     width:360px;
     flex-shrink:0;
@@ -455,7 +462,8 @@ function resizeRenderer() {
   const w = sceneEl.clientWidth;
   const h = sceneEl.clientHeight;
   if (w > 0 && h > 0) {
-    renderer.setSize(w, h, false);
+    // IMPORTANT: true so canvas style matches, fills container
+    renderer.setSize(w, h, true);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   }
@@ -543,8 +551,7 @@ function computeAccelerations() {
   for (let i = 0; i < 3; i++) {
     for (let j = i + 1; j < 3; j++) {
       const rVec = pos[j].clone().sub(pos[i]);
-      const r2 = rVec.lengthSq();
-      const r = Math.sqrt(r2);
+      const r = rVec.length();
       if (r < 0.001) continue;
       const invR3 = 1 / (r * r * r);
       const force = rVec.multiplyScalar(G * invR3);
@@ -762,8 +769,10 @@ async function evolutionarySearch() {
     updateUI(tested, 'Complete');
     displayWinner();
     paused = false;
-    if (bestConfig) loadConfig(bestConfig);
-    fitCamera();
+    if (bestConfig) {
+      loadConfig(bestConfig);
+      fitCamera();
+    }
     return;
   }
 
